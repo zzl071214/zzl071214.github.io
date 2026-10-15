@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LST&ZZL</title>
+<meta name="description" content="点击「打开」，让 300 份祝福一个接一个弹出来；点开那份特别的祝福，它们会拼成一颗心。">
+<meta name="theme-color" content="#FFB7C5">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%97%3C/text%3E%3C/svg%3E">
+
+<!-- 社交分享卡片（把 og:url 换成你自己的网址即可） -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="LST&ZZL">
+<meta property="og:description" content="点击「打开」，让 300 份祝福一个接一个弹出来；点开那份特别的祝福，它们会拼成一颗心。">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+    :root {
+        --pink-bg: #FFB7C5;
+        --pink-deep: #e91e63;
+        --tip-bg: #e0e0e0;
+        --tip-fg: #666;
+        --heart-duration: 15s;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+        background-color: var(--pink-bg);
+        font-family: "YouYuan", "幼圆", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+        font-weight: bold;
+        text-align: center;
+        padding: 60px 20px 20px;
+        position: relative;
+        overflow-x: hidden;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .main-title {
+        color: var(--pink-deep);
+        font-size: clamp(22px, 6vw, 30px);
+        margin-bottom: 12px;
+    }
+
+    .subtitle {
+        color: var(--pink-deep);
+        font-size: clamp(22px, 6vw, 30px);
+        font-weight: bold;
+        margin-bottom: 32px;
+    }
+
+    .signature { margin-top: 26px; font-size: 14px; color: #c2185b; opacity: .8; }
+
+    .initial-btn {
+        background-color: var(--pink-deep);
+        color: #fff;
+        border: none;
+        border-radius: 30px;
+        font-size: clamp(16px, 4.4vw, 18px);
+        font-family: inherit;
+        font-weight: bold;
+        padding: 12px 35px;
+        cursor: pointer;
+        transition: transform .3s ease, opacity .3s ease, background-color .3s ease;
+    }
+    .initial-btn:hover { transform: scale(1.05); opacity: .9; }
+    .initial-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+    .initial-btn:disabled { background-color: #ccc; cursor: not-allowed; transform: none; opacity: 1; }
+
+    .bless-popup {
+        position: fixed;
+        width: 220px;
+        min-height: 100px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, .18);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 22px 15px 12px;
+        font-size: 16px;
+        font-family: inherit;
+        font-weight: bold;
+        text-align: center;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        animation: popIn .3s ease-out forwards;
+        z-index: 9999;
+    }
+
+    .bless-popup::before {
+        content: attr(data-tip);
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--tip-bg);
+        color: var(--tip-fg);
+        font-size: 12px;
+        padding: 4px 6px;
+        border-radius: 10px 10px 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+        width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+        z-index: 10000;
+    }
+
+    /* 文字较长时自动放宽，而不是溢出 */
+    .bless-popup.adjust-size {
+        width: auto;
+        min-width: 220px;
+        max-width: min(350px, 86vw);
+        padding: 26px 20px 14px;
+        white-space: normal;
+        line-height: 1.45;
+    }
+
+    .bless-popup.arranging {
+        transition: left var(--heart-duration) ease-in-out, top var(--heart-duration) ease-in-out;
+        will-change: left, top;
+    }
+
+    .special-popup {
+        width: min(400px, 88vw);
+        height: 220px;
+        font-size: clamp(22px, 6.5vw, 30px);
+        color: var(--pink-deep);
+        background-color: #ffc0cb;
+        box-shadow: 0 8px 25px rgba(255, 105, 180, .4);
+        z-index: 10000;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) scale(0);
+        animation: specialPopIn .5s ease-out forwards;
+        padding-top: 30px;
+    }
+    .special-popup::before { font-size: 14px; padding: 6px 0; }
+
+    .final-popup {
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+        font-size: clamp(30px, 11vw, 56px);
+        color: var(--pink-deep);
+        background-color: #ffc0cb;
+        box-shadow: none;
+        z-index: 20000;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) scale(0);
+        animation: finalPopIn .6s ease-out forwards;
+        padding: 60px 24px 24px;
+        white-space: normal;
+        line-height: 1.6;
+    }
+    .final-popup::before { font-size: 16px; padding: 10px 0; border-radius: 0; white-space: normal; }
+
+    .close-btn {
+        position: absolute;
+        top: 2px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        color: var(--tip-fg);
+        font-size: 16px;
+        font-family: inherit;
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: color .2s ease;
+        z-index: 10001;
+        font-weight: bold;
+        line-height: 1;
+    }
+    .special-popup .close-btn { top: 4px; right: 12px; font-size: 20px; width: 22px; height: 22px; }
+    .final-popup .close-btn { top: 14px; right: 20px; font-size: 28px; width: 40px; height: 40px; }
+    .bless-popup.adjust-size .close-btn { top: 3px; right: 10px; }
+    .close-btn:hover { color: var(--pink-deep); }
+    .close-btn:focus-visible { outline: 2px solid var(--pink-deep); border-radius: 4px; }
+
+    @keyframes popIn {
+        0% { transform: scale(0); }
+        80% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    @keyframes popOut {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0); opacity: 0; }
+    }
+    @keyframes specialPopIn {
+        0% { transform: translate(-50%, -50%) scale(0); }
+        80% { transform: translate(-50%, -50%) scale(1.08); }
+        100% { transform: translate(-50%, -50%) scale(1); }
+    }
+    @keyframes specialPopOut {
+        0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    }
+    @keyframes finalPopIn {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        80% { transform: translate(-50%, -50%) scale(1.03); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @keyframes finalPopOut {
+        0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    }
+
+    /* 尊重「减弱动态效果」系统设置 */
+    @media (prefers-reduced-motion: reduce) {
+        * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+        :root { --heart-duration: .4s; }
+    }
+
+    @media (max-width: 480px) {
+        body { padding: 70px 12px 16px; }
+        .bless-popup { width: 190px; min-height: 90px; font-size: 15px; }
+        .bless-popup.adjust-size { min-width: 190px; }
+    }
+</style>
+</head>
+<body>
+
+    <h1 class="main-title">始于 2026 年 3 月 29 日</h1>
+    <p class="subtitle">终于 2026 年 9 月 25 日</p>
+
+    <button id="initialTvBtn" class="initial-btn" type="button">打开</button>
+    <p class="signature">—— zzl</p>
+
+    <!--
+      背景音乐：优先播放仓库内自托管的 lst.mp3（同源，所有浏览器/App 表现一致）。
+      后面的抖音 CDN 仅作兜底。注意不要再把会失效的外链放在第一位：
+      各浏览器对 <source> 回退的处理不同，会出现"不同软件听到不同音乐"的问题。
+      想换歌：把新文件放进仓库根目录，改下面第一行 src 即可。
+    -->
+    <audio id="bgMusic" loop preload="none" playsinline>
+        <source src="lst.mp3" type="audio/mpeg">
+        <source src="https://sf5-hl-cdn-tos.douyinstatic.com/obj/ies-music/7499771397531503370.mp3" type="audio/mpeg">
+        您的浏览器不支持音频元素。
+    </audio>
+
+<script>
+(function () {
+    "use strict";
+
+    /* ===== 可自定义区域 ===== */
+    const CONFIG = {
+        totalPopups: 300,        // 祝福弹窗总数（含那 1 份特殊祝福）
+        popupInterval: 70,       // 每个弹窗之间的间隔（毫秒）
+        specialBlessing: "平安喜乐",   // 特殊祝福（点它的 × 会触发心形排列）
+        finalBlessing: "天天开心",     // 最终全屏祝福
+        finalTip: "💌 平安喜乐",
+        heartFormMs: 15000,      // 小弹窗排列成爱心所需时间（毫秒），需与 CSS 的 --heart-duration 一致
+        heartHoldMs: 3000        // 爱心完全就位后，再停留多久显示全屏祝福（毫秒）
+    };
+
+    const popupBgColors = [
+        "#ffc0cb", "#ffb6c1", "#ff69b4", "#ff1493", "#db7093",
+        "#bc8f8f", "#c71585", "#ffa07a", "#ff7f50", "#ffa500",
+        "#ffffe0", "#e6e6fa", "#d8bfd8", "#dda0dd", "#ee82ee"
+    ];
+
+    const normalBlessings = [
+        "我一直都在ε٩(๑> ₃ <)۶з", "每天都有好心情(σ≧︎▽︎≦︎)σ",
+        "要天天开心呀(⑅˃◡˂⑅)", "超可爱的ヾ(❀╹◡╹)ﾉ~",
+        "平安喜乐(⁎⁍̴̛͂▿⁍̴̛͂⁎)*✲ﾟ*", "照顾好自己૧(●´৺`●)૭",
+        "想你◕‿◕｡", "最重要的人(づ◡ど)",
+        "有一个健康的身体ヽ(๏~๏)ﾉ", "每天都能开开心心୧꒰•̀ᴗ•́꒱୨",
+        "心疼你꒦ິ^꒦ິ", "每天都要原气满满վ'ᴗ' ի", "多喝热水哦~",
+        "天冷了，要多穿衣服(•̀⌄•́)", "愿所有烦恼都消失≧∇≦", "我想你了🥺",
+        "早点休息呀 (ૢ˃ꌂ˂⁎)", "少熬夜对身体不好(●'◡'●)", "保持微笑呀😊",
+        "开开心心度过每一天•ᴗ•", "梦想成真🤔", "你是最棒的(๑•̀ㅁ•́ฅ)",
+        "平平安安", "注意身体好嘛🤧", "不舒服大胆说出来", "好好爱自己",
+        "今天也要开心呀", "好好吃饭，好好睡觉", "你超棒的！", "今天也有想你❤️",
+        "愿你天天有小惊喜", "照顾好自己呀！", "笑容多一点，烦恼少一点",
+        "今天的你也超可爱！", "今天超开心！", "美好会奔向你",
+        "今天也超顺利呀✅", "小快乐会准时到🎉", "你笑起来超甜😋", "今天也要元气满满⚡",
+        "烦恼全走开啦💨", "今天也被偏爱呀💖", "好好享受今天🌞", "你值得所有好🌟",
+        "今天也超幸运🍀", "开心多留一会儿⏳", "每天都有小确幸🥰", "今天状态超棒呀👍",
+        "坏情绪全清零🧹", "今天也要超自在😌", "好运一直跟着你🚶",
+        "大学生活加油", "有我陪你", "一直都在", "记得吃早餐哦",
+        "对自己好点", "好好爱自己，比什么都重要", "想念不如相见，期待重逢",
+        "聪明的你", "愿你每天都有小确幸", "今天超可爱的",
+        "抱抱🤗", "少熬夜，梦里啥都有嘻嘻", "今天的你，也在努力开心度过",
+        "小小的进步，也是成长", "生活有点甜，因为有你呀", "伤心就停下来，抱抱自己",
+        "阳光总在风雨后", "你值得被温柔对待", "愿你笑容常在脸上", "今天也要过得开心呀",
+        "记得吃点甜甜的小蛋糕", "愿你生活满是阳光", "遇到难题别放弃呀", "愿你每天都超幸福",
+        "天冷记得戴围巾", "愿你友谊长存不散", "今天也要保持好心情", "别给自己太多负担",
+        "愿你梦想早日实现", "永不离弃", "愿你每天都有好运气", "好好睡觉",
+        "愿你烦恼通通走开", "今天过得还顺利吗", "愿你被爱意包围着", "记得多吃蔬菜呀",
+        "天冷别忘加衣服", "愿你每天都有小幸运", "别让疲惫困住自己", "愿你一直勇敢向前",
+        "终会见面", "高考加油↖(^ω^)↗", "记得按时休息哦", "愿你每天都超快乐😆",
+        "别熬夜，早点睡呀", "愿你生活顺顺利利", "今天也要开心度过", "祝我们以后",
+        "愿你烦恼越来越少", "遇到开心事别忘告诉我", "愿你每天都有好心情",
+        "天冷记得喝杯热饮", "愿你一直保持初心", "别太焦虑，慢慢来", "愿你每天都过得开心",
+        "记得照顾好自己哦", "愿你未来越来越好"
+    ];
+
+    const tipTexts = [
+        "🎁温馨提示：点击关闭", "🎁小小心意请查收", "🎁专属祝福来啦",
+        "🎁天天开心呀", "🎁礼物送达", "🎁消息来啦", "🎁注意签收(๑╹ヮ╹๑)ﾉ"
+    ];
+
+    /* ===== 状态 ===== */
+    let popupList = [];
+    let isWithdrawing = false;
+    const pendingTimers = new Set();
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const initialTvBtn = document.getElementById("initialTvBtn");
+    const bgMusic = document.getElementById("bgMusic");
+
+    function later(fn, ms) {
+        const id = setTimeout(function () {
+            pendingTimers.delete(id);
+            fn();
+        }, ms);
+        pendingTimers.add(id);
+        return id;
+    }
+
+    function clearPendingTimers() {
+        pendingTimers.forEach(clearTimeout);
+        pendingTimers.clear();
+    }
+
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    /* ===== 弹窗 ===== */
+    function createPopup(isSpecial) {
+        const popup = document.createElement("div");
+        popup.className = isSpecial ? "bless-popup special-popup" : "bless-popup";
+        popup.dataset.isSpecial = String(Boolean(isSpecial));
+        popup.dataset.tip = pick(tipTexts);
+
+        const text = document.createElement("span");
+        text.textContent = isSpecial ? CONFIG.specialBlessing : pick(normalBlessings);
+        popup.appendChild(text);
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "close-btn";
+        closeBtn.textContent = "×";
+        closeBtn.setAttribute("aria-label", isSpecial ? "把祝福拼成一颗心" : "关闭这条祝福");
+        closeBtn.addEventListener("click", function () {
+            if (isWithdrawing) return;
+            if (isSpecial) arrangeIntoHeart();
+            else closeSinglePopup(popup);
+        });
+        popup.appendChild(closeBtn);
+
+        if (isSpecial) {
+            document.body.appendChild(popup);
+        } else {
+            popup.style.backgroundColor = pick(popupBgColors);
+            popup.style.visibility = "hidden";
+            document.body.appendChild(popup);
+
+            // 文字放不下时自动放宽，避免内容溢出气泡
+            const innerWidth = popup.clientWidth - 30;
+            if (text.scrollWidth > innerWidth + 1) popup.classList.add("adjust-size");
+
+            const w = popup.offsetWidth;
+            const h = popup.offsetHeight;
+            const maxLeft = Math.max(1, document.documentElement.clientWidth - w);
+            const maxTop = Math.max(1, window.innerHeight - h);
+            popup.style.left = Math.floor(Math.random() * maxLeft) + "px";
+            popup.style.top = Math.floor(Math.random() * maxTop) + "px";
+            popup.style.visibility = "visible";
+        }
+
+        popupList.push(popup);
+    }
+
+    function closeSinglePopup(popup) {
+        popupList = popupList.filter((item) => item !== popup);
+        popup.style.animation = "popOut .3s ease-out forwards";
+        later(() => popup.remove(), 300);
+    }
+
+    function generateAllPopups() {
+        clearPendingTimers();
+        removeAllPopups();
+        popupList = [];
+        isWithdrawing = false;
+        initialTvBtn.disabled = true;
+
+        const total = CONFIG.totalPopups;
+        for (let i = 0; i < total - 1; i++) {
+            later(() => createPopup(false), i * CONFIG.popupInterval);
+        }
+        later(() => createPopup(true), (total - 1) * CONFIG.popupInterval);
+    }
+
+    /* ===== 心形排列 ===== */
+    function arrangeIntoHeart() {
+        if (isWithdrawing) return;
+        isWithdrawing = true;
+
+        const special = popupList.find((p) => p.dataset.isSpecial === "true");
+        const normalPopups = popupList.filter((p) => p.dataset.isSpecial !== "true");
+        popupList = [];
+
+        if (special) {
+            special.style.animation = "specialPopOut .4s ease-out forwards";
+            later(() => special.remove(), 400);
+        }
+
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const scale = Math.min(window.innerWidth, window.innerHeight) / 38;
+        const n = normalPopups.length || 1;
+
+        normalPopups.forEach(function (popup, i) {
+            const t = (i / n) * Math.PI * 2;
+            const hx = 16 * Math.pow(Math.sin(t), 3);
+            const hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            const w = popup.offsetWidth;
+            const h = popup.offsetHeight;
+
+            if (reduceMotion) {
+                popup.style.left = (cx + hx * scale - w / 2) + "px";
+                popup.style.top = (cy - hy * scale - h / 2) + "px";
+                return;
+            }
+            // 把过渡放到下一帧再加，避免浏览器把起始位置当作终点
+            requestAnimationFrame(function () {
+                popup.classList.add("arranging");
+                popup.style.left = (cx + hx * scale - w / 2) + "px";
+                popup.style.top = (cy - hy * scale - h / 2) + "px";
+            });
+        });
+
+        // 爱心排列动画本身耗时 heartFormMs，走完后再停留 heartHoldMs 才显示全屏祝福。
+        // （减弱动效时排列是瞬时的，所以不必等这段时间）
+        const waitMs = reduceMotion ? 800 : CONFIG.heartFormMs + CONFIG.heartHoldMs;
+        later(showFinalPopup, waitMs);
+    }
+
+    /* ===== 最终祝福 ===== */
+    function showFinalPopup() {
+        const fp = document.createElement("div");
+        fp.className = "bless-popup final-popup";
+        fp.dataset.tip = CONFIG.finalTip;
+
+        const text = document.createElement("span");
+        text.textContent = CONFIG.finalBlessing;
+        fp.appendChild(text);
+
+        const cb = document.createElement("button");
+        cb.type = "button";
+        cb.className = "close-btn";
+        cb.textContent = "×";
+        cb.setAttribute("aria-label", "关闭并重新开始");
+        cb.addEventListener("click", function () {
+            fp.style.animation = "finalPopOut .4s ease-out forwards";
+            later(function () {
+                fp.remove();
+                removeAllPopups();
+                popupList = [];
+                isWithdrawing = false;
+                initialTvBtn.disabled = false;
+            }, 400);
+        });
+        fp.appendChild(cb);
+        document.body.appendChild(fp);
+    }
+
+    function removeAllPopups() {
+        document.querySelectorAll(".bless-popup").forEach((p) => p.remove());
+    }
+
+    /* ===== 背景音乐 =====
+       音乐在点击「打开」时开始播放（属于用户手势，符合浏览器自动播放策略）。
+       页面上不再提供静音按钮，如需暂停请直接使用设备音量键。 */
+
+    /* ===== 交互绑定 ===== */
+    initialTvBtn.addEventListener("click", function () {
+        generateAllPopups();
+        // 点击「打开」本身就是用户手势，这里尝试播放音乐
+        if (bgMusic.paused) bgMusic.play().catch(function () { /* 音源不可用时静默忽略 */ });
+    });
+
+    window.addEventListener("resize", function () {
+        if (isWithdrawing) return;
+        document.querySelectorAll(".bless-popup:not(.special-popup):not(.final-popup)").forEach(function (p) {
+            const w = p.offsetWidth;
+            const h = p.offsetHeight;
+            const left = parseInt(p.style.left, 10) || 0;
+            const top = parseInt(p.style.top, 10) || 0;
+            p.style.left = Math.max(0, Math.min(left, document.documentElement.clientWidth - w)) + "px";
+            p.style.top = Math.max(0, Math.min(top, window.innerHeight - h)) + "px";
+        });
+    });
+})();
+</script>
+</body>
+</html>
